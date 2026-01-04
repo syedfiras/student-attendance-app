@@ -1,5 +1,3 @@
-// app/index.tsx
-
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -15,6 +13,7 @@ const Stack = createNativeStackNavigator() as any;
 
 const Index: React.FC = () => {
   return (
+    
     <Stack.Navigator initialRouteName="Classes">
       <Stack.Screen
         name="Classes"

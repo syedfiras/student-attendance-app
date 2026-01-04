@@ -16,7 +16,8 @@ export interface Student {
   id: string;
   name: string;
   rollNo?: string;
-  classId: string; // which class they belong to
+  classId: string;
+  usn?:string; // which class they belong to
 }
 
 export interface AttendanceRecordMap {

@@ -1,11 +1,12 @@
-// screens/StudentsScreen.tsx
-
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  Pressable,
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { loadData, saveData, Student } from '../storage'; // <- adjust path if needed
-
-/* ---------- Navigation types for this screen ---------- */
+import { loadData, saveData, Student } from '../storage';
 
 type RootStackParamList = {
   Students: { classId: string; className?: string };
@@ -14,6 +15,7 @@ type RootStackParamList = {
     studentId?: string;
     name?: string;
     rollNo?: string;
+    usn?: string;
   };
   Attendance: { classId: string; className?: string };
   Report: { classId: string; className?: string };
@@ -21,16 +23,18 @@ type RootStackParamList = {
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Students'>;
 
-/* ---------- Component ---------- */
-
 const StudentsScreen: React.FC<Props> = ({ route, navigation }) => {
   const { classId, className } = route.params;
 
   const [students, setStudents] = useState<Student[]>([]);
 
-  const load = async (): Promise<void> => {
+  // 🔄 Load students from storage
+  const load = async () => {
     const data = await loadData();
-    setStudents(data.students.filter((s) => s.classId === classId));
+    const filtered = data.students.filter(
+      (s) => s.classId === classId
+    );
+    setStudents(filtered);
   };
 
   useEffect(() => {
@@ -42,102 +46,173 @@ const StudentsScreen: React.FC<Props> = ({ route, navigation }) => {
     return unsub;
   }, [navigation]);
 
-  const deleteStudent = (student: Student): void => {
-    Alert.alert('Delete Student', `Delete student "${student.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          const data = await loadData();
-          data.students = data.students.filter((s) => s.id !== student.id);
+  // 🗑️ GUARANTEED DELETE (UI first, storage second)
+  const deleteStudent = async (student: Student) => {
+    // 1️⃣ Remove from UI immediately
+    setStudents((prev) =>
+      prev.filter((s) => s.id !== student.id)
+    );
 
-          // remove from attendance records
-          data.attendance = data.attendance.map((a) => {
-            const newRecords = { ...a.records };
-            delete newRecords[student.id];
-            return { ...a, records: newRecords };
-          });
+    // 2️⃣ Remove from storage
+    const data = await loadData();
 
-          await saveData(data);
-          load();
-        },
-      },
-    ]);
+    data.students = data.students.filter(
+      (s) => s.id !== student.id
+    );
+
+    // Remove student from all attendance records
+    data.attendance = data.attendance.map((a) => {
+      const newRecords = { ...a.records };
+      delete newRecords[student.id];
+      return { ...a, records: newRecords };
+    });
+
+    await saveData(data);
   };
 
   const renderItem = ({ item }: { item: Student }) => (
-    <View className="mb-3 flex-row items-center justify-between rounded-xl border border-slate-200 bg-white p-4">
-      <View className="flex-1">
-        <Text className="text-base font-semibold text-slate-800">
+    <View
+      style={{
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontWeight: '600', fontSize: 16 }}>
           {item.name}
         </Text>
-        {item.rollNo ? (
-          <Text className="mt-1 text-xs text-slate-500">
+        {item.usn && (
+          <Text style={{ fontSize: 12, color: '#64748b' }}>
+            USN: {item.usn}
+          </Text>
+        )}
+        {item.rollNo && (
+          <Text style={{ fontSize: 12, color: '#64748b' }}>
             Roll No: {item.rollNo}
           </Text>
-        ) : null}
+        )}
       </View>
-      <View className="flex-row gap-2">
-        <TouchableOpacity
-          className="rounded-full bg-blue-100 px-3 py-1"
+
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {/* ✏️ EDIT */}
+        <Pressable
           onPress={() =>
             navigation.navigate('StudentForm', {
               classId,
               studentId: item.id,
               name: item.name,
               rollNo: item.rollNo,
+              usn: item.usn,
             })
           }
+          style={{
+            backgroundColor: '#dbeafe',
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 999,
+          }}
         >
-          <Text className="text-xs font-semibold text-blue-700">Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="rounded-full bg-red-100 px-3 py-1"
+          <Text style={{ color: '#1d4ed8', fontSize: 12 }}>
+            Edit
+          </Text>
+        </Pressable>
+
+        {/* 🗑️ DELETE */}
+        <Pressable
           onPress={() => deleteStudent(item)}
+          style={{
+            backgroundColor: '#fee2e2',
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 999,
+          }}
         >
-          <Text className="text-xs font-semibold text-red-700">Delete</Text>
-        </TouchableOpacity>
+          <Text style={{ color: '#b91c1c', fontSize: 12 }}>
+            Delete
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
 
   return (
-    <View className="flex-1 bg-slate-100 p-4">
+    <View style={{ flex: 1, backgroundColor: '#f1f5f9', padding: 16 }}>
       {students.length === 0 ? (
-        <Text className="mt-4 text-center text-slate-500">
-          No students yet. Add your first student.
+        <Text style={{ textAlign: 'center', color: '#64748b' }}>
+          No students added yet.
         </Text>
       ) : (
-        <FlatList<Student>
+        <FlatList
           data={students}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
         />
       )}
 
-      <View className="mt-4 gap-3">
-        <TouchableOpacity
-          className="items-center rounded-xl bg-emerald-600 py-3"
-          onPress={() => navigation.navigate('StudentForm', { classId })}
-        >
-          <Text className="font-semibold text-white">Add Student</Text>
-        </TouchableOpacity>
+      {/* ➕ ADD STUDENT */}
+      <Pressable
+        onPress={() =>
+          navigation.navigate('StudentForm', { classId })
+        }
+        style={{
+          marginTop: 12,
+          backgroundColor: '#059669',
+          paddingVertical: 14,
+          borderRadius: 12,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: 'white', fontWeight: '600' }}>
+          Add Student
+        </Text>
+      </Pressable>
 
-        <TouchableOpacity
-          className="items-center rounded-xl bg-blue-600 py-3"
-          onPress={() => navigation.navigate('Attendance', { classId, className })}
-        >
-          <Text className="font-semibold text-white">Mark Attendance</Text>
-        </TouchableOpacity>
+      {/* 📅 MARK ATTENDANCE */}
+      <Pressable
+        onPress={() =>
+          navigation.navigate('Attendance', {
+            classId,
+            className,
+          })
+        }
+        style={{
+          marginTop: 12,
+          backgroundColor: '#2563eb',
+          paddingVertical: 14,
+          borderRadius: 12,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: 'white', fontWeight: '600' }}>
+          Mark Attendance
+        </Text>
+      </Pressable>
 
-        <TouchableOpacity
-          className="items-center rounded-xl bg-purple-600 py-3"
-          onPress={() => navigation.navigate('Report', { classId, className })}
-        >
-          <Text className="font-semibold text-white">Monthly Report</Text>
-        </TouchableOpacity>
-      </View>
+      {/* 📊 REPORT */}
+      <Pressable
+        onPress={() =>
+          navigation.navigate('Report', {
+            classId,
+            className,
+          })
+        }
+        style={{
+          marginTop: 12,
+          backgroundColor: '#7c3aed',
+          paddingVertical: 14,
+          borderRadius: 12,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: 'white', fontWeight: '600' }}>
+          Monthly Report
+        </Text>
+      </Pressable>
     </View>
   );
 };

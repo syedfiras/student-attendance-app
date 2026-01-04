@@ -1,145 +1,176 @@
-// screens/StudentsScreen.tsx
-
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Calendar } from 'react-native-calendars';
+
 import { loadData, saveData, Student } from '../storage';
 
-/* ---------- Navigation types for this screen ---------- */
-
 type RootStackParamList = {
-  Students: { classId: string; className?: string };
-  StudentForm: {
-    classId: string;
-    studentId?: string;
-    name?: string;
-    rollNo?: string;
-  };
   Attendance: { classId: string; className?: string };
-  Report: { classId: string; className?: string };
 };
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Students'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'Attendance'>;
 
-/* ---------- Component ---------- */
-
-const StudentsScreen: React.FC<Props> = ({ route, navigation }) => {
+const AttendanceScreen: React.FC<Props> = ({ route, navigation }) => {
   const { classId, className } = route.params;
 
   const [students, setStudents] = useState<Student[]>([]);
-
-  const load = async (): Promise<void> => {
-    const data = await loadData();
-    setStudents(data.students.filter((s) => s.classId === classId));
-  };
+  const [records, setRecords] = useState<{ [id: string]: boolean }>({});
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split('T')[0]
+  );
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
-    navigation.setOptions({ title: className || 'Students' });
+    navigation.setOptions({ title: className || 'Mark Attendance' });
   }, [className, navigation]);
 
   useEffect(() => {
-    const unsub = navigation.addListener('focus', load);
-    return unsub;
-  }, [navigation]);
+    load();
+  }, [selectedDate]);
 
-  const deleteStudent = (student: Student): void => {
-    Alert.alert('Delete Student', `Delete student "${student.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          const data = await loadData();
-          // remove from students
-          data.students = data.students.filter((s) => s.id !== student.id);
-          // remove from attendance records
-          data.attendance = data.attendance.map((a) => {
-            const newRecords = { ...a.records };
-            delete newRecords[student.id];
-            return { ...a, records: newRecords };
-          });
+  const load = async () => {
+    const data = await loadData();
 
-          await saveData(data);
-          load();
-        },
-      },
-    ]);
+    const classStudents = data.students.filter(
+      (s) => s.classId === classId
+    );
+    setStudents(classStudents);
+
+    const existing = data.attendance.find(
+      (a) => a.classId === classId && a.date === selectedDate
+    );
+
+    const initial: { [id: string]: boolean } = {};
+    classStudents.forEach((s) => {
+      initial[s.id] = existing ? !!existing.records[s.id] : true;
+    });
+
+    setRecords(initial);
+  };
+
+  const toggle = (id: string) => {
+    setRecords((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const saveAttendance = async () => {
+    const data = await loadData();
+
+    const index = data.attendance.findIndex(
+      (a) => a.classId === classId && a.date === selectedDate
+    );
+
+    const entry = {
+      id: index >= 0 ? data.attendance[index].id : 'att_' + Date.now(),
+      classId,
+      date: selectedDate,
+      records,
+    };
+
+    if (index >= 0) data.attendance[index] = entry;
+    else data.attendance.push(entry);
+
+    await saveData(data);
+    navigation.goBack();
   };
 
   const renderItem = ({ item }: { item: Student }) => (
-    <View className="mb-3 flex-row items-center justify-between rounded-xl border border-slate-200 bg-white p-4">
-      <View className="flex-1">
-        <Text className="text-base font-semibold text-slate-800">
+    <TouchableOpacity
+      onPress={() => toggle(item.id)}
+      className={`mb-3 flex-row items-center justify-between rounded-xl p-4 ${
+        records[item.id] ? 'bg-emerald-100' : 'bg-red-100'
+      }`}
+    >
+      <View>
+        <Text className="font-semibold text-slate-800">
           {item.name}
         </Text>
-        {item.rollNo ? (
-          <Text className="mt-1 text-xs text-slate-500">
-            Roll No: {item.rollNo}
+        {item.usn && (
+          <Text className="text-xs text-slate-600">
+            USN: {item.usn}
           </Text>
-        ) : null}
+        )}
       </View>
-      <View className="flex-row gap-2">
-        <TouchableOpacity
-          className="rounded-full bg-blue-100 px-3 py-1"
-          onPress={() =>
-            navigation.navigate('StudentForm', {
-              classId,
-              studentId: item.id,
-              name: item.name,
-              rollNo: item.rollNo,
-            })
-          }
-        >
-          <Text className="text-xs font-semibold text-blue-700">Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="rounded-full bg-red-100 px-3 py-1"
-          onPress={() => deleteStudent(item)}
-        >
-          <Text className="text-xs font-semibold text-red-700">Delete</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+
+      <Text
+        className={`font-bold ${
+          records[item.id] ? 'text-emerald-700' : 'text-red-700'
+        }`}
+      >
+        {records[item.id] ? 'PRESENT' : 'ABSENT'}
+      </Text>
+    </TouchableOpacity>
   );
 
   return (
     <View className="flex-1 bg-slate-100 p-4">
-      {students.length === 0 ? (
-        <Text className="mt-4 text-center text-slate-500">
-          No students yet. Add your first student.
+      {/* 📅 CALENDAR DROPDOWN BUTTON */}
+      <TouchableOpacity
+        className="mb-4 rounded-xl bg-white border border-slate-300 px-4 py-3"
+        onPress={() => setShowCalendar(true)}
+      >
+        <Text className="font-semibold text-slate-700">
+          Date: {selectedDate} ⬇️
         </Text>
-      ) : (
-        <FlatList<Student>
-          data={students}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-        />
-      )}
+      </TouchableOpacity>
 
-      <View className="mt-4 gap-3">
+      {/* 📅 CALENDAR DROPDOWN */}
+      <Modal transparent animationType="fade" visible={showCalendar}>
         <TouchableOpacity
-          className="items-center rounded-xl bg-emerald-600 py-3"
-          onPress={() => navigation.navigate('StudentForm', { classId })}
+          className="flex-1 bg-black/40 justify-center"
+          onPress={() => setShowCalendar(false)}
+          activeOpacity={1}
         >
-          <Text className="font-semibold text-white">Add Student</Text>
-        </TouchableOpacity>
+          <View className="mx-6 rounded-xl bg-white p-4">
+            <Text className="mb-2 text-lg font-bold text-slate-800">
+              Select Date
+            </Text>
 
-        <TouchableOpacity
-          className="items-center rounded-xl bg-blue-600 py-3"
-          onPress={() => navigation.navigate('Attendance', { classId, className })}
-        >
-          <Text className="font-semibold text-white">Mark Attendance</Text>
+            <Calendar
+              current={selectedDate}
+              onDayPress={(day) => {
+                setSelectedDate(day.dateString);
+                setShowCalendar(false);
+              }}
+              markedDates={{
+                [selectedDate]: {
+                  selected: true,
+                  selectedColor: '#2563eb',
+                },
+              }}
+              theme={{
+                todayTextColor: '#2563eb',
+                arrowColor: '#2563eb',
+              }}
+            />
+          </View>
         </TouchableOpacity>
+      </Modal>
 
-        <TouchableOpacity
-          className="items-center rounded-xl bg-purple-600 py-3"
-          onPress={() => navigation.navigate('Report', { classId, className })}
-        >
-          <Text className="font-semibold text-white">Monthly Report</Text>
-        </TouchableOpacity>
-      </View>
+      {/* 👥 STUDENTS */}
+      <FlatList
+        data={students}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+      />
+
+      {/* 💾 SAVE */}
+      <TouchableOpacity
+        className="mt-4 items-center rounded-xl bg-blue-600 py-3"
+        onPress={saveAttendance}
+      >
+        <Text className="font-semibold text-white">
+          Save Attendance
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
-export default StudentsScreen;
+export default AttendanceScreen;

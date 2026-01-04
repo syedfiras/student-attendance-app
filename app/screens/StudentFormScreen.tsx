@@ -12,19 +12,20 @@ type RootStackParamList = {
     studentId?: string;
     name?: string;
     rollNo?: string;
+    usn?: string;
   };
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentForm'>;
 
 const StudentFormScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { classId, studentId, name: initialName, rollNo: initialRoll } = route.params;
+  const { classId, studentId, name: initialName, rollNo: initialRoll, usn: initialUSN } = route.params;
 
   const editing = !!studentId;
 
   const [name, setName] = useState(initialName || '');
   const [rollNo, setRollNo] = useState(initialRoll || '');
-
+  const [usn, setusn] = useState(initialUSN || '');
   useEffect(() => {
     navigation.setOptions({ title: editing ? 'Edit Student' : 'Add Student' });
   }, [editing, navigation]);
@@ -37,7 +38,7 @@ const StudentFormScreen: React.FC<Props> = ({ route, navigation }) => {
     if (editing) {
       // update existing student
       data.students = data.students.map((s) =>
-        s.id === studentId ? { ...s, name, rollNo } : s
+        s.id === studentId ? { ...s, name, rollNo, usn } : s
       );
     } else {
       // create new student
@@ -46,6 +47,7 @@ const StudentFormScreen: React.FC<Props> = ({ route, navigation }) => {
         classId,
         name,
         rollNo,
+        usn,
       });
     }
 
@@ -66,6 +68,12 @@ const StudentFormScreen: React.FC<Props> = ({ route, navigation }) => {
           placeholder="Roll No (optional)"
           value={rollNo}
           onChangeText={setRollNo}
+          className="bg-white rounded-xl px-4 py-3 border border-slate-200"
+        />
+        <TextInput
+          placeholder="USN"
+          value={usn}
+          onChangeText={setusn}
           className="bg-white rounded-xl px-4 py-3 border border-slate-200"
         />
 
