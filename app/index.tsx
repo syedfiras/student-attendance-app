@@ -13,12 +13,12 @@ const Stack = createNativeStackNavigator() as any;
 
 const Index: React.FC = () => {
   return (
-    
+
     <Stack.Navigator initialRouteName="Classes">
       <Stack.Screen
         name="Classes"
         component={ClassesScreen}
-        options={{ title: 'Classes' }}
+        options={{ headerShown: false, title: 'Classes' }}
       />
       <Stack.Screen
         name="ClassForm"

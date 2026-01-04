@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { loadData, saveData } from '../storage';
 
@@ -50,30 +51,46 @@ const ClassFormScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   return (
-    <View className="flex-1 bg-slate-100 p-4">
-      <View className="gap-4">
-        <TextInput
-          placeholder="Class Name"
-          value={name}
-          onChangeText={setName}
-          className="bg-white rounded-xl px-4 py-3 border border-slate-200"
-        />
-        <TextInput
-          placeholder="Section (optional)"
-          value={section}
-          onChangeText={setSection}
-          className="bg-white rounded-xl px-4 py-3 border border-slate-200"
-        />
-        <TouchableOpacity
-          className="mt-2 rounded-xl bg-blue-600 py-3 items-center"
-          onPress={onSave}
-        >
-          <Text className="text-white font-semibold">
-            {editing ? 'Save Changes' : 'Add Class'}
-          </Text>
-        </TouchableOpacity>
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="px-6 pt-4 flex-1">
+        <Text className="text-3xl font-bold text-slate-900 mb-8">
+          {editing ? 'Edit Class' : 'New Class'}
+        </Text>
+
+        <View className="gap-6">
+          <View>
+            <Text className="text-sm font-medium text-slate-900 mb-2 ml-1">Class Name</Text>
+            <TextInput
+              placeholder="e.g. 10"
+              value={name}
+              onChangeText={setName}
+              className="bg-slate-50 rounded-xl px-4 py-4 text-base text-slate-900"
+              placeholderTextColor="#94a3b8"
+            />
+          </View>
+
+          <View>
+            <Text className="text-sm font-medium text-slate-900 mb-2 ml-1">Section (Optional)</Text>
+            <TextInput
+              placeholder="e.g. A"
+              value={section}
+              onChangeText={setSection}
+              className="bg-slate-50 rounded-xl px-4 py-4 text-base text-slate-900"
+              placeholderTextColor="#94a3b8"
+            />
+          </View>
+
+          <TouchableOpacity
+            className="mt-4 rounded-2xl bg-slate-900 py-4 items-center"
+            onPress={onSave}
+          >
+            <Text className="text-white font-semibold text-lg">
+              {editing ? 'Save Changes' : 'Create Class'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadData, saveData } from '../storage';
 
 const ClassesScreen: React.FC<any> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [classes, setClasses] = useState<any[]>([]);
 
   const load = async () => {
@@ -41,24 +43,23 @@ const ClassesScreen: React.FC<any> = ({ navigation }) => {
 
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity
-      className="mb-3 rounded-xl border border-slate-200 bg-white p-4 flex-row justify-between items-center"
+      className="mb-2 py-4 border-b border-slate-100 flex-row justify-between items-center"
       onPress={() =>
         navigation.navigate('Students', {
-          classId: item.id,          // ✅ ALWAYS send classId
-          className: item.name,      // optional
+          classId: item.id,
+          className: item.name,
         })
       }
     >
       <View className="flex-1">
-        <Text className="text-lg font-semibold text-slate-800">{item.name}</Text>
+        <Text className="text-xl font-bold text-slate-900">{item.name}</Text>
         {item.section ? (
-          <Text className="text-xs text-slate-500 mt-1">Section: {item.section}</Text>
+          <Text className="text-sm text-slate-500 mt-1">{item.section}</Text>
         ) : null}
       </View>
 
-      <View className="flex-row gap-2">
+      <View className="flex-row gap-4 items-center">
         <TouchableOpacity
-          className="px-3 py-1 rounded-full bg-blue-100"
           onPress={() =>
             navigation.navigate('ClassForm', {
               classId: item.id,
@@ -67,33 +68,41 @@ const ClassesScreen: React.FC<any> = ({ navigation }) => {
             })
           }
         >
-          <Text className="text-blue-700 text-xs font-semibold">Edit</Text>
+          <Text className="text-slate-900 font-medium text-sm">Edit</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          className="px-3 py-1 rounded-full bg-red-100"
           onPress={() => deleteClass(item)}
         >
-          <Text className="text-red-700 text-xs font-semibold">Delete</Text>
+          <Text className="text-red-500 text-sm">Delete</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <View className="flex-1 bg-slate-100 p-4">
+    <View className="flex-1 bg-white px-6 pt-4">
+      <Text className="text-3xl font-bold text-slate-900 mb-6">Classes</Text>
+
       {classes.length === 0 ? (
-        <Text className="text-center text-slate-500 mt-4">
-          No classes yet. Tap + to add one.
-        </Text>
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-slate-400">No classes found.</Text>
+        </View>
       ) : (
-        <FlatList data={classes} keyExtractor={(item) => item.id} renderItem={renderItem} />
+        <FlatList
+          data={classes}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        />
       )}
 
       <TouchableOpacity
-        className="absolute right-5 bottom-5 w-14 h-14 rounded-full bg-blue-600 items-center justify-center shadow-lg"
+        className="absolute right-6 w-16 h-16 rounded-full bg-slate-900 items-center justify-center shadow-lg"
+        style={{ bottom: 30 + insets.bottom }}
         onPress={() => navigation.navigate('ClassForm')}
       >
-        <Text className="text-white text-3xl -mt-1">+</Text>
+        <Text className="text-white text-3xl font-light">+</Text>
       </TouchableOpacity>
     </View>
   );

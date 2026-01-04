@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { loadData, saveData } from '../storage';
 
@@ -56,37 +57,57 @@ const StudentFormScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   return (
-    <View className="flex-1 bg-slate-100 p-4">
-      <View className="gap-4">
-        <TextInput
-          placeholder="Student Name"
-          value={name}
-          onChangeText={setName}
-          className="bg-white rounded-xl px-4 py-3 border border-slate-200"
-        />
-        <TextInput
-          placeholder="Roll No (optional)"
-          value={rollNo}
-          onChangeText={setRollNo}
-          className="bg-white rounded-xl px-4 py-3 border border-slate-200"
-        />
-        <TextInput
-          placeholder="USN"
-          value={usn}
-          onChangeText={setusn}
-          className="bg-white rounded-xl px-4 py-3 border border-slate-200"
-        />
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="px-6 pt-4 flex-1">
+        <Text className="text-3xl font-bold text-slate-900 mb-8">
+          {editing ? 'Edit Student' : 'New Student'}
+        </Text>
 
-        <TouchableOpacity
-          className="mt-2 items-center rounded-xl bg-blue-600 py-3"
-          onPress={onSave}
-        >
-          <Text className="font-semibold text-white">
-            {editing ? 'Save Changes' : 'Add Student'}
-          </Text>
-        </TouchableOpacity>
+        <View className="gap-6">
+          <View>
+            <Text className="text-sm font-medium text-slate-900 mb-2 ml-1">Student Name</Text>
+            <TextInput
+              placeholder="John Doe"
+              value={name}
+              onChangeText={setName}
+              className="bg-slate-50 rounded-xl px-4 py-4 text-base text-slate-900"
+              placeholderTextColor="#94a3b8"
+            />
+          </View>
+
+          <View>
+            <Text className="text-sm font-medium text-slate-900 mb-2 ml-1">Roll No (Optional)</Text>
+            <TextInput
+              placeholder="e.g. 1"
+              value={rollNo}
+              onChangeText={setRollNo}
+              className="bg-slate-50 rounded-xl px-4 py-4 text-base text-slate-900"
+              placeholderTextColor="#94a3b8"
+            />
+          </View>
+
+          <View>
+            <Text className="text-sm font-medium text-slate-900 mb-2 ml-1">USN / ID (Optional)</Text>
+            <TextInput
+              placeholder="e.g. 1AB23..."
+              value={usn}
+              onChangeText={setusn}
+              className="bg-slate-50 rounded-xl px-4 py-4 text-base text-slate-900"
+              placeholderTextColor="#94a3b8"
+            />
+          </View>
+
+          <TouchableOpacity
+            className="mt-4 rounded-2xl bg-slate-900 py-4 items-center"
+            onPress={onSave}
+          >
+            <Text className="text-white font-semibold text-lg">
+              {editing ? 'Save Changes' : 'Add Student'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -28,7 +29,7 @@ const AttendanceScreen: React.FC<Props> = ({ route, navigation }) => {
   const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
-    navigation.setOptions({ title: className || 'Mark Attendance' });
+    navigation.setOptions({ title: className ? `${className} - Attendance` : 'Attendance' });
   }, [className, navigation]);
 
   useEffect(() => {
@@ -80,96 +81,97 @@ const AttendanceScreen: React.FC<Props> = ({ route, navigation }) => {
     navigation.goBack();
   };
 
-  const renderItem = ({ item }: { item: Student }) => (
-    <TouchableOpacity
-      onPress={() => toggle(item.id)}
-      className={`mb-3 flex-row items-center justify-between rounded-xl p-4 ${
-        records[item.id] ? 'bg-emerald-100' : 'bg-red-100'
-      }`}
-    >
-      <View>
-        <Text className="font-semibold text-slate-800">
-          {item.name}
-        </Text>
-        {item.usn && (
-          <Text className="text-xs text-slate-600">
-            USN: {item.usn}
-          </Text>
-        )}
-      </View>
-
-      <Text
-        className={`font-bold ${
-          records[item.id] ? 'text-emerald-700' : 'text-red-700'
-        }`}
+  const renderItem = ({ item }: { item: Student }) => {
+    const isPresent = records[item.id];
+    return (
+      <TouchableOpacity
+        onPress={() => toggle(item.id)}
+        className="mb-2 py-4 flex-row items-center justify-between border-b border-slate-100 bg-white"
+        activeOpacity={0.7}
       >
-        {records[item.id] ? 'PRESENT' : 'ABSENT'}
-      </Text>
-    </TouchableOpacity>
-  );
+        <View>
+          <Text className="text-lg font-bold text-slate-900">
+            {item.name}
+          </Text>
+          <Text className="text-sm text-slate-400 mt-1">
+            {item.usn ? `USN: ${item.usn}` : 'No USN'}
+          </Text>
+        </View>
+
+        <View className={`px-4 py-2 rounded-full ${isPresent ? 'bg-slate-900' : 'bg-slate-100'}`}>
+          <Text className={`font-semibold text-xs ${isPresent ? 'text-white' : 'text-slate-500'}`}>
+            {isPresent ? 'PRESENT' : 'ABSENT'}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <View className="flex-1 bg-slate-100 p-4">
-      {/* 📅 CALENDAR DROPDOWN BUTTON */}
-      <TouchableOpacity
-        className="mb-4 rounded-xl bg-white border border-slate-300 px-4 py-3"
-        onPress={() => setShowCalendar(true)}
-      >
-        <Text className="font-semibold text-slate-700">
-          Date: {selectedDate} ⬇️
-        </Text>
-      </TouchableOpacity>
-
-      {/* 📅 CALENDAR DROPDOWN */}
-      <Modal transparent animationType="fade" visible={showCalendar}>
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="flex-1 px-6 pt-4">
+        {/* 📅 CALENDAR DROPDOWN BUTTON */}
         <TouchableOpacity
-          className="flex-1 bg-black/40 justify-center"
-          onPress={() => setShowCalendar(false)}
-          activeOpacity={1}
+          className="mb-6 flex-row items-center gap-2"
+          onPress={() => setShowCalendar(true)}
         >
-          <View className="mx-6 rounded-xl bg-white p-4">
-            <Text className="mb-2 text-lg font-bold text-slate-800">
-              Select Date
-            </Text>
-
-            <Calendar
-              current={selectedDate}
-              onDayPress={(day) => {
-                setSelectedDate(day.dateString);
-                setShowCalendar(false);
-              }}
-              markedDates={{
-                [selectedDate]: {
-                  selected: true,
-                  selectedColor: '#2563eb',
-                },
-              }}
-              theme={{
-                todayTextColor: '#2563eb',
-                arrowColor: '#2563eb',
-              }}
-            />
-          </View>
+          <Text className="text-3xl font-bold text-slate-900">
+            {selectedDate}
+          </Text>
+          <Text className="text-slate-400 text-xl">▼</Text>
         </TouchableOpacity>
-      </Modal>
 
-      {/* 👥 STUDENTS */}
-      <FlatList
-        data={students}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-      />
+        {/* 📅 CALENDAR DROPDOWN */}
+        <Modal transparent animationType="fade" visible={showCalendar}>
+          <TouchableOpacity
+            className="flex-1 bg-black/20 justify-center"
+            onPress={() => setShowCalendar(false)}
+            activeOpacity={1}
+          >
+            <View className="mx-6 rounded-2xl bg-white p-4 shadow-xl">
+              <Calendar
+                current={selectedDate}
+                onDayPress={(day) => {
+                  setSelectedDate(day.dateString);
+                  setShowCalendar(false);
+                }}
+                markedDates={{
+                  [selectedDate]: {
+                    selected: true,
+                    selectedColor: '#0f172a', // slate-900
+                  },
+                }}
+                theme={{
+                  todayTextColor: '#0f172a',
+                  arrowColor: '#0f172a',
+                  dotColor: '#0f172a',
+                }}
+              />
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
-      {/* 💾 SAVE */}
-      <TouchableOpacity
-        className="mt-4 items-center rounded-xl bg-blue-600 py-3"
-        onPress={saveAttendance}
-      >
-        <Text className="font-semibold text-white">
-          Save Attendance
-        </Text>
-      </TouchableOpacity>
-    </View>
+        {/* 👥 STUDENTS */}
+        <FlatList
+          data={students}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+        />
+
+        {/* 💾 SAVE */}
+        <View className="pt-4 pb-2 bg-white border-t border-slate-50">
+          <TouchableOpacity
+            className="items-center rounded-2xl bg-slate-900 py-4"
+            onPress={saveAttendance}
+          >
+            <Text className="font-semibold text-white">
+              Save Attendance
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 };
 

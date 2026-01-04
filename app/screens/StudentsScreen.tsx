@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
   FlatList,
   Pressable,
+  TouchableOpacity,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { loadData, saveData, Student } from '../storage';
 
@@ -24,6 +27,7 @@ type RootStackParamList = {
 type Props = NativeStackScreenProps<RootStackParamList, 'Students'>;
 
 const StudentsScreen: React.FC<Props> = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
   const { classId, className } = route.params;
 
   const [students, setStudents] = useState<Student[]>([]);
@@ -38,7 +42,7 @@ const StudentsScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   useEffect(() => {
-    navigation.setOptions({ title: className || 'Students' });
+    navigation.setOptions({ title: className ? `${className} - Students` : 'Students' });
   }, [className, navigation]);
 
   useEffect(() => {
@@ -72,34 +76,18 @@ const StudentsScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const renderItem = ({ item }: { item: Student }) => (
     <View
-      style={{
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}
+      className="mb-2 py-4 border-b border-slate-100 flex-row justify-between items-center bg-white"
     >
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: '600', fontSize: 16 }}>
+      <View className="flex-1">
+        <Text className="text-lg font-bold text-slate-900">
           {item.name}
         </Text>
-        {item.usn && (
-          <Text style={{ fontSize: 12, color: '#64748b' }}>
-            USN: {item.usn}
-          </Text>
-        )}
-        {item.rollNo && (
-          <Text style={{ fontSize: 12, color: '#64748b' }}>
-            Roll No: {item.rollNo}
-          </Text>
-        )}
+        <Text className="text-sm text-slate-400 mt-1">
+          {item.usn ? `USN: ${item.usn}` : ''} {item.rollNo ? `• Roll: ${item.rollNo}` : ''}
+        </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        {/* ✏️ EDIT */}
+      <View className="flex-row gap-4 items-center">
         <Pressable
           onPress={() =>
             navigation.navigate('StudentForm', {
@@ -110,110 +98,67 @@ const StudentsScreen: React.FC<Props> = ({ route, navigation }) => {
               usn: item.usn,
             })
           }
-          style={{
-            backgroundColor: '#dbeafe',
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            borderRadius: 999,
-          }}
         >
-          <Text style={{ color: '#1d4ed8', fontSize: 12 }}>
-            Edit
-          </Text>
+          <Text className="text-slate-900 font-medium text-sm">Edit</Text>
         </Pressable>
 
-        {/* 🗑️ DELETE */}
         <Pressable
           onPress={() => deleteStudent(item)}
-          style={{
-            backgroundColor: '#fee2e2',
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            borderRadius: 999,
-          }}
         >
-          <Text style={{ color: '#b91c1c', fontSize: 12 }}>
-            Delete
-          </Text>
+          <Text className="text-red-500 text-sm">Delete</Text>
         </Pressable>
       </View>
     </View>
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f1f5f9', padding: 16 }}>
-      {students.length === 0 ? (
-        <Text style={{ textAlign: 'center', color: '#64748b' }}>
-          No students added yet.
-        </Text>
-      ) : (
-        <FlatList
-          data={students}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-        />
-      )}
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="flex-1 px-6 pt-4">
 
-      {/* ➕ ADD STUDENT */}
-      <Pressable
-        onPress={() =>
-          navigation.navigate('StudentForm', { classId })
-        }
-        style={{
-          marginTop: 12,
-          backgroundColor: '#059669',
-          paddingVertical: 14,
-          borderRadius: 12,
-          alignItems: 'center',
-        }}
-      >
-        <Text style={{ color: 'white', fontWeight: '600' }}>
-          Add Student
-        </Text>
-      </Pressable>
+        {students.length === 0 ? (
+          <View className="flex-1 justify-center items-center">
+            <Text className="text-slate-400">No students added yet.</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={students}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 20 }}
+          />
+        )}
 
-      {/* 📅 MARK ATTENDANCE */}
-      <Pressable
-        onPress={() =>
-          navigation.navigate('Attendance', {
-            classId,
-            className,
-          })
-        }
-        style={{
-          marginTop: 12,
-          backgroundColor: '#2563eb',
-          paddingVertical: 14,
-          borderRadius: 12,
-          alignItems: 'center',
-        }}
-      >
-        <Text style={{ color: 'white', fontWeight: '600' }}>
-          Mark Attendance
-        </Text>
-      </Pressable>
+        <View className="pb-2 pt-4 bg-white border-t border-slate-50 gap-3">
+          <View className="flex-row gap-3">
+            {/* 📅 MARK ATTENDANCE */}
+            <Pressable
+              onPress={() => navigation.navigate('Attendance', { classId, className })}
+              className="flex-1 bg-slate-100 py-4 rounded-2xl items-center"
+            >
+              <Text className="text-slate-900 font-semibold">Attendance</Text>
+            </Pressable>
 
-      {/* 📊 REPORT */}
-      <Pressable
-        onPress={() =>
-          navigation.navigate('Report', {
-            classId,
-            className,
-          })
-        }
-        style={{
-          marginTop: 12,
-          backgroundColor: '#7c3aed',
-          paddingVertical: 14,
-          borderRadius: 12,
-          alignItems: 'center',
-        }}
-      >
-        <Text style={{ color: 'white', fontWeight: '600' }}>
-          Monthly Report
-        </Text>
-      </Pressable>
-    </View>
+            {/* 📊 REPORT */}
+            <Pressable
+              onPress={() => navigation.navigate('Report', { classId, className })}
+              className="flex-1 bg-slate-100 py-4 rounded-2xl items-center"
+            >
+              <Text className="text-slate-900 font-semibold">Report</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* ➕ FAB */}
+        <TouchableOpacity
+          className="absolute right-6 w-16 h-16 rounded-full bg-slate-900 items-center justify-center shadow-lg"
+          style={{ bottom: 30 + insets.bottom + 80 }} // Adjusted to avoid overlap with bottom bar
+          onPress={() => navigation.navigate('StudentForm', { classId })}
+        >
+          <Text className="text-white text-3xl font-light">+</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
